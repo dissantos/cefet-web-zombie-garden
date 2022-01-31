@@ -66,7 +66,7 @@ router.put('/eaten/', async (req, res, next) => {
     req.flash('error', `Erro desconhecido. Descrição: ${error}`)
 
   } finally {
-    res.redirect('/')
+    res.redirect('/people')
   }
 
 })
@@ -88,7 +88,31 @@ router.get('/new/', (req, res) => {
 //   2. Redirecionar para a rota de listagem de pessoas
 //      - Em caso de sucesso do INSERT, colocar uma mensagem feliz
 //      - Em caso de erro do INSERT, colocar mensagem vermelhinha
+router.post('/', async (req, res) => {
+  const pessoa = req.body;
+  if(!pessoa) {
+    req.flash('error');
+    return;
+  }
 
+  const transaction = await db.getConnection()
+  try {
+    await transaction.beginTransaction()
+    const [result] = await transaction.execute(`INSERT INTO person (id,name,alive,eatenBy) VALUES (NULL, ?, 1, NULL)`,[pessoa.name]);
+    if(result) {
+      console.log(`Pessoa ${pessoa.name} adicionada com sucesso`);
+      req.flash('success');
+    } else {
+      req.flash('error')
+    }
+    await transaction.commit();
+  } catch (error) {
+    console.error(error)
+    throw error;
+  } finally {
+    res.redirect('/')
+  }
+})
 
 /* DELETE uma pessoa */
 // Exercício 2: IMPLEMENTAR AQUI
