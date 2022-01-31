@@ -99,11 +99,11 @@ router.post('/', async (req, res) => {
   try {
     await transaction.beginTransaction()
     const [result] = await transaction.execute(`INSERT INTO person (id,name,alive,eatenBy) VALUES (NULL, ?, 1, NULL)`,[pessoa.name]);
-    if(result) {
+    if(result && result.insertedRows === 1) {
       console.log(`Pessoa ${pessoa.name} adicionada com sucesso`);
-      req.flash('success');
+      req.flash('success', `Pessoa ${pessoa.name} adicionada com sucesso`);
     } else {
-      req.flash('error')
+      req.flash('error', `A pessoa ${pessoa.name} não foi adicionada`)
     }
     await transaction.commit();
   } catch (error) {
@@ -121,6 +121,30 @@ router.post('/', async (req, res) => {
 //   2. Redirecionar para a rota de listagem de pessoas
 //      - Em caso de sucesso do INSERT, colocar uma mensagem feliz
 //      - Em caso de erro do INSERT, colocar mensagem vermelhinha
+router.delete('/:id', async (req, res) => {
+  const pessoaID = req.params.id;
+  if(!(pessoaID)) {
+    req.flash('error','ERRO: Esta pessoa não existe');
+    return;
+  }
 
+  const transaction = await db.getConnection()
+  try {
+    await transaction.beginTransaction()
+    const [result] = await transaction.execute(`DELETE FROM person WHERE id=?`,[pessoaID]);
+    if(result) {
+      console.log(`Pessoa deletada com sucesso`);
+      req.flash('success', 'Pessoa deletada com sucesso');
+    } else {
+      req.flash('error', 'ERRO: A exclusão não foi executada')
+    }
+    await transaction.commit();
+  } catch (error) {
+    console.error(error)
+    throw error;
+  } finally {
+    res.redirect('/')
+  }
+})
 
 export default router
